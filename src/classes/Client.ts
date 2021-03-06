@@ -1,7 +1,8 @@
 import enmap from 'enmap';
 import { Client, Intents, MessageEmbed, MessageEmbedOptions } from 'discord.js';
 import { Config, permObject } from '../interfaces/Config';
-import { readdir } from 'fs/promises';
+import { readdir } from 'fs';
+import { promisify } from 'util';
 import { Logger } from '../modules/Logger';
 import { handleExceptions } from '../modules/handleExceptions';
 import { GuildSettings } from '../interfaces/GuildSettings';
@@ -9,8 +10,10 @@ import { Functions } from '../modules/functions';
 import { Command } from '../interfaces/Command';
 import { Message } from './Message';
 
+const readAsyncDir = promisify(readdir);
+
 export class Bot extends Client {
-    public constructor(public config: Config) {
+    public constructor(public readonly config: Config) {
         super({ ws: { intents: Intents.NON_PRIVILEGED } });
     }
     public commands: enmap<string, Command> = new enmap();
@@ -22,8 +25,8 @@ export class Bot extends Client {
     public async start(): Promise<void> {
         handleExceptions(this);
         this.login(this.config.token);
-        const cmdFiles = await readdir(`${__dirname}/../commands`);
-        const eventFiles = await readdir(`${__dirname}/../events`);
+        const cmdFiles = await readAsyncDir(`${__dirname}/../commands`);
+        const eventFiles = await readAsyncDir(`${__dirname}/../events`);
         cmdFiles.forEach((cmd) => {
             this.functions.loadCommand(this, cmd.split('.')[0]);
         });
@@ -38,7 +41,7 @@ export class Bot extends Client {
     public embed(
         data: MessageEmbedOptions,
         message?: Message,
-        embedColor?: string,
+        embedColor = '#0000FF',
     ): MessageEmbed {
         return new MessageEmbed({
             ...data,

@@ -7,6 +7,7 @@ export const run: RunFunction = async (client, message) => {
             client.functions.unloadCommand(client, cmd.conf.name),
         ),
     );
+    client.destroy();
     process.exit(0);
 };
 export const conf = {
