@@ -101,7 +101,7 @@ export class Functions {
             const event: Event = await import(`../events/${eventName}`);
             client.on(eventName, event.run.bind(null, client));
         } catch (e) {
-            client.logger.error(`Unable to load command ${eventName}`);
+            client.logger.error(`Unable to load event ${eventName}`);
             console.error(e);
         }
     }
