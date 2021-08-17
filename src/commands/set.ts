@@ -1,102 +1,122 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { RunFunction } from '../interfaces/Command';
-import { GuildSettings } from '../interfaces/GuildSettings';
+import { ColorResolvable, HexColorString } from 'discord.js';
+import { Command, RunFunction } from '../classes/Command';
+import { GuildSettings } from '../types/GuildSettings';
 
-export const run: RunFunction = async (
-    client,
-    message,
-    [action, key, ...value],
-) => {
-    // Retrieve current guild settings (merged) and overrides only.
-    const settings = message.settings;
-    const defaults = client.settings.get('default')!;
-    const overrides = client.settings.get(message.guild!.id)!;
-    if (!client.settings.has(message.guild!.id))
-        client.settings.set(message.guild!.id, {} as GuildSettings);
+const run: RunFunction = async ({ interaction, settings, bot }) => {
+  const modRole = interaction.options.getRole('modrole');
+  const adminRole = interaction.options.getRole('adminrole');
+  const embedColor = interaction.options.getString('embedcolor');
 
-    // Edit an existing key value
-    if (action === 'edit') {
-        // User must specify a key.
-        if (!key) return message.reply('Please specify a key to edit');
-        // User must specify a key that actually exists!
-        if (!defaults[key])
-            return message.reply('This key does not exist in the settings');
-        const joinedValue = value.join(' ');
-        // User must specify a value to change.
-        if (joinedValue.length < 1)
-            return message.reply('Please specify a new value');
-        // User must specify a different value than the current one.
-        if (joinedValue === settings[key])
-            return message.reply('This setting already has that value!');
+  if (!interaction.guild) return;
+  if (!bot.settings.has(interaction.guild.id))
+    bot.settings.set(interaction.guild.id, {} as GuildSettings);
 
-        // If the guild does not have any overrides, initialize it.
-        if (!client.settings.has(message.guild!.id))
-            client.settings.set(message.guild!.id, {} as GuildSettings);
+  if (!modRole && !adminRole && !embedColor) {
+    const aRole = await interaction.guild?.roles.fetch(settings.adminRole);
+    const mRole = await interaction.guild?.roles.fetch(settings.modRole);
+    const embed = bot.embed(
+      {
+        title: 'Settings',
+        description: 'Admin configurable server settings',
+        fields: [
+          {
+            name: 'Admin Role',
+            value: aRole?.toString() ?? 'Role Not Found',
+          },
+          {
+            name: 'Moderator Role',
+            value: mRole?.toString() ?? 'Role Not Found',
+          },
+          {
+            name: '⟵ Embed Color',
+            value: settings.embedColor.toString().toLowerCase(),
+          },
+        ],
+      },
+      { settings }
+    );
+    return interaction.reply({ embeds: [embed] });
+  }
 
-        // Modify the guild overrides directly.
-        client.settings.set(message.guild!.id, joinedValue, key);
+  let text = '';
 
-        // Confirm everything is fine!
-        message.reply(`${key} successfully edited to ${joinedValue}`);
-    }
+  if (adminRole) {
+    bot.settings.set(interaction.guild.id, adminRole.id, 'adminRole');
+    text += `Set Admin Role: ${adminRole.toString()}\n`;
+  }
 
-    // Resets a key to the default value
-    else if (action === 'del' || action === 'reset') {
-        if (!key) return message.reply('Please specify a key to reset.');
-        if (!defaults[key])
-            return message.reply('This key does not exist in the settings');
-        if (!overrides[key])
-            return message.reply(
-                'This key does not have an override and is already using defaults.',
-            );
+  if (modRole) {
+    bot.settings.set(interaction.guild.id, modRole.id, 'modRole');
+    text += `Set Moderator Role: ${modRole.toString()}\n`;
+  }
 
-        const response = await client.functions.awaitReply(
-            message,
-            `Are you sure you want to reset ${key} to the default value?`,
-        );
+  if (embedColor) {
+    bot.settings.set(interaction.guild.id, embedColor, 'embedColor');
+    settings.embedColor = embedColor as ColorResolvable;
+    text += `Set Embed Color: ${embedColor.toLowerCase()}\n`;
+  }
 
-        // If they respond with y or yes, continue.
-        if (['y', 'yes'].includes(response.toLowerCase())) {
-            // We delete the `key` here.
-            client.settings.delete(message.guild!.id, key);
-            message.reply(`${key} was successfully reset to default.`);
-        }
-        // If they respond with n or no, we inform them that the action has been cancelled.
-        else if (['n', 'no', 'cancel'].includes(response)) {
-            message.reply(
-                `Your setting for \`${key}\` remains at \`${settings[key]}\``,
-            );
-        }
-    } else if (action === 'get') {
-        if (!key) return message.reply('Please specify a key to view');
-        if (!defaults[key])
-            return message.reply('This key does not exist in the settings');
-        const isDefault = !overrides[key]
-            ? '\nThis is the default global default value.'
-            : '';
-        message.reply(
-            `The value of ${key} is currently ${settings[key]}${isDefault}`,
-        );
-    } else {
-        // Otherwise, the default action is to return the whole configuration;
-        const array: string[] = [];
-        Object.entries(settings).forEach(([key, value]) => {
-            array.push(`${key}${' '.repeat(20 - key.length)}::  ${value}`);
-        });
-        await message.channel.send(
-            `= Current Guild Settings =\n${array.join('\n')}`,
-            { code: 'asciidoc' },
-        );
-    }
-};
-export const conf = {
-    name: 'set',
-    aliases: ['setting', 'settings', 'conf'],
-    permLevel: 'Administrator',
+  const embed = bot.embed(
+    {
+      title: 'Successfully:',
+      description: text,
+    },
+    { settings }
+  );
+
+  interaction.reply({ embeds: [embed] });
 };
 
-export const help = {
-    category: 'System',
-    description: 'View or change settings for your server.',
-    usage: 'set <view/get/edit> <key> <value>',
-};
+type choices = [
+  name: string,
+  value: Exclude<
+    ColorResolvable,
+    number | readonly [number, number, number] | HexColorString
+  >
+][];
+
+const options: choices = [
+  ['white', 'WHITE'],
+  ['aqua', 'AQUA'],
+  ['green', 'GREEN'],
+  ['blue', 'BLUE'],
+  ['yellow', 'YELLOW'],
+  ['purple', 'PURPLE'],
+  ['luminous_vivid_pink', 'LUMINOUS_VIVID_PINK'],
+  ['fuchsia', 'FUCHSIA'],
+  ['gold', 'GOLD'],
+  ['orange', 'ORANGE'],
+  ['red', 'RED'],
+  ['grey', 'GREY'],
+  ['darker_grey', 'DARKER_GREY'],
+  ['navy', 'NAVY'],
+  ['dark_green', 'DARK_GREEN'],
+  ['dark_blue', 'DARK_BLUE'],
+  ['dark_purple', 'DARK_PURPLE'],
+  ['dark_vivid_pink', 'DARK_VIVID_PINK'],
+  ['light_grey', 'LIGHT_GREY'],
+  ['dark_navy', 'DARK_NAVY'],
+  ['blurple', 'BLURPLE'],
+  ['greyple', 'GREYPLE'],
+  ['dark_but_not_black', 'DARK_BUT_NOT_BLACK'],
+  ['not_quite_black', 'NOT_QUITE_BLACK'],
+  ['random', 'RANDOM'],
+];
+
+export const cmd = new Command()
+  .setName('set')
+  .setDescription('Server settings')
+  .setPermLevel('Administrator')
+  .setRun(run)
+  .addRoleOption((input) =>
+    input.setName('adminrole').setDescription('Set the Admin role')
+  )
+  .addRoleOption((input) =>
+    input.setName('modrole').setDescription('Set the moderator role')
+  )
+  .addStringOption((input) =>
+    input
+      .setName('embedcolor')
+      .setDescription('Set the embed color')
+      .addChoices(options)
+  );

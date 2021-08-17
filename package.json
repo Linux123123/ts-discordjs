@@ -1,52 +1,58 @@
 {
-    "name": "ts-discordjs",
-    "version": "1.0.0",
-    "description": "A template for typescript discord bot",
-    "main": "dist/index.js",
-    "scripts": {
-        "test": "tsc-watch --onCompilationComplete \"node dist/index.js\"",
-        "start": "node dist/index.js",
-        "build": "rimraf dist/* && tsc",
-        "lint": "eslint \"src/**\"",
-        "postinstall": "npm run build && node dist/setup.js"
-    },
-    "engines": {
-        "node": ">=12"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Linux123123/ts-discordjs.git"
-    },
-    "keywords": [
-        "ts-discordjs",
-        "typescript",
-        "discordjs"
-    ],
-    "author": "Linux123123",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/Linux123123/ts-discordjs/issues"
-    },
-    "homepage": "https://github.com/Linux123123/ts-discordjs#readme",
-    "dependencies": {
-        "@types/node": "^14.14.31",
-        "@types/readline-sync": "^1.4.3",
-        "@types/ws": "^7.4.0",
-        "chalk": "^4.1.0",
-        "discord.js": "^12.5.1",
-        "enmap": "^5.8.4",
-        "moment": "^2.29.1",
-        "readline-sync": "^1.4.10",
-        "rimraf": "^3.0.2",
-        "typescript": "^4.2.3"
-    },
-    "devDependencies": {
-        "@typescript-eslint/eslint-plugin": "^4.15.2",
-        "@typescript-eslint/parser": "^4.15.2",
-        "eslint": "^7.21.0",
-        "eslint-config-prettier": "^8.1.0",
-        "eslint-plugin-prettier": "^3.3.1",
-        "prettier": "^2.2.1",
-        "tsc-watch": "^4.2.9"
-    }
+  "name": "bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsc-watch --onCompilationComplete \"node dist/index.js\"",
+    "start": "node dist/index.js",
+    "build": "rimraf dist/* && tsc",
+    "lint": "eslint \"src/**\""
+  },
+  "engines": {
+    "node": ">=16.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/"
+  },
+  "keywords": [
+    "ts-discordjs",
+    "typescript",
+    "discordjs"
+  ],
+  "author": "Linux123123",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/"
+  },
+  "homepage": "https://github.com/",
+  "dependencies": {
+    "@discordjs/builders": "^0.5.0",
+    "@discordjs/rest": "^0.1.0-canary.0",
+    "@types/node": "^16.6.1",
+    "@types/node-fetch": "^2.5.12",
+    "chalk": "^4.1.2",
+    "discord-api-types": "^0.22.0",
+    "discord.js": "^13.1.0",
+    "dotenv": "^10.0.0",
+    "enmap": "^5.8.7",
+    "moment": "^2.29.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.3.5"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "prettier": "^2.3.2",
+    "tsc-watch": "^4.4.0"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.3",
+    "utf-8-validate": "^5.0.5",
+    "zlib-sync": "^0.1.7"
+  }
 }

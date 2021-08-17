@@ -1,33 +1,22 @@
-import { RunFunction } from '../interfaces/Command';
+import { Command, RunFunction } from '../classes/Command';
 
-export const run: RunFunction = async (client, message) => {
-    const embed = client.embed(
+const run: RunFunction = async ({ bot, interaction, settings }) => {
+  const embed = bot.embed(
+    {
+      title: '**🏓 PONG!**',
+      fields: [
         {
-            title: '**🏓 PING!**',
-            fields: [
-                {
-                    name: 'BOT Latency',
-                    value: `**${Date.now() - message.createdTimestamp}ms**`,
-                },
-                {
-                    name: 'Discord API Latency',
-                    value: `**${Math.round(client.ws.ping)}ms**`,
-                },
-            ],
+          name: 'Discord API Latency',
+          value: `**${Math.round(bot.discordClient.ws.ping)}ms**`,
         },
-        message,
-    );
-    message.channel.send(embed);
-};
-export const conf = {
-    name: 'ping',
-    aliases: ['latency'],
-    permLevel: 'User',
+      ],
+    },
+    { settings }
+  );
+  interaction.reply({ embeds: [embed], ephemeral: true });
 };
 
-export const help = {
-    name: 'ping',
-    category: 'Miscelaneous',
-    description: 'Bot latency',
-    usage: 'ping',
-};
+export const cmd = new Command()
+  .setName('ping')
+  .setDescription('Bot latency')
+  .setRun(run);

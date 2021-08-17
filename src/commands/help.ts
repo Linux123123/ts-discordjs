@@ -1,95 +1,45 @@
-import { EmbedFieldData } from 'discord.js';
-import { RunFunction } from '../interfaces/Command';
+import { MessageEmbed } from 'discord.js';
+import { Command, RunFunction } from '../classes/Command';
 
-export const run: RunFunction = async (client, message, args) => {
-    // If no specific command is called, show all filtered commands.
-    if (!args[0]) {
-        // Filter all commands by which are available for the user's level, using the <Collection>.filter() method.
-        const myCommands = client.commands.filter(
-            (cmd) =>
-                client.levelCache[cmd.conf.permLevel] <= message.author.level,
-        );
+const run: RunFunction = async ({ interaction, bot, permLevel, settings }) => {
+  const availCommands = bot.commands.filter(
+    (cmd) => bot.levelCache[cmd.permLevel] <= permLevel
+  );
 
-        let currentCategory = '';
-        const fields: EmbedFieldData[] = [];
-        let fieldsNum = 0;
-        const sorted = myCommands
-            .array()
-            .sort((p, c) =>
-                p.help.category > c.help.category
-                    ? 1
-                    : p.conf.name > c.conf.name &&
-                      p.help.category === c.help.category
-                    ? 1
-                    : -1,
-            );
-        sorted.forEach((c) => {
-            const cat = c.help.category;
-            if (currentCategory !== cat) {
-                if (currentCategory !== '') fieldsNum += 1;
-                fields[fieldsNum] = { name: `${cat}`, value: '' };
-                currentCategory = cat;
-            }
-            fields[
-                fieldsNum
-            ].value += `${message.settings.prefix}${c.conf.name} - ${c.help.description}\n`;
-        });
+  const sorted = availCommands
+    .array()
+    .sort((p, c) =>
+      p.category > c.category
+        ? 1
+        : p.name > c.name && p.category === c.category
+        ? 1
+        : -1
+    );
 
-        message.channel.send(
-            client.embed(
-                {
-                    title: 'Command list',
-                    description: `**Use ${message.settings.prefix}help <commandname> for details**`,
-                    fields: fields,
-                },
-                message,
-            ),
-        );
-    } else {
-        // Show individual command's help.
-        const cmd = args[0];
-        if (client.commands.has(cmd)) {
-            const command = client.commands.get(cmd);
-            if (!command) return;
-            if (
-                message.author.level < client.levelCache[command.conf.permLevel]
-            )
-                return;
-            message.channel.send(
-                client.embed(
-                    {
-                        title: 'Command',
-                        fields: [
-                            {
-                                name: 'Description:',
-                                value: command.help.description,
-                            },
-                            {
-                                name: 'Usage:',
-                                value:
-                                    message.settings.prefix +
-                                    command.help.usage,
-                            },
-                            {
-                                name: 'Aliases:',
-                                value: command.conf.aliases.join(', '),
-                            },
-                        ],
-                    },
-                    message,
-                ),
-            );
-        }
+  let currentCategory = '';
+  const embeds: MessageEmbed[] = [];
+  let embedNum = 0;
+
+  sorted.forEach((c) => {
+    const cat = c.category;
+    if (currentCategory !== cat) {
+      if (currentCategory !== '') embedNum += 1;
+      embeds[embedNum] = bot.embed(
+        {
+          title: `${cat} Commands`,
+          description: '',
+        },
+        { settings }
+      );
+      currentCategory = cat;
     }
+    embeds[embedNum].description += `/${c.name} - *${c.description}*\n`;
+  });
+
+  await bot.functions.paginate(interaction, embeds);
 };
-export const conf = {
-    name: 'help',
-    aliases: ['h', 'halp'],
-    permLevel: 'User',
-};
-export const help = {
-    category: 'System',
-    description:
-        'Displays all the available commands for your permission level.',
-    usage: 'help [command]',
-};
+
+export const cmd = new Command()
+  .setName('help')
+  .setDescription('Gives all the commands available and their descriptions')
+  .setRun(run);
