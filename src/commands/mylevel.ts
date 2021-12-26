@@ -1,9 +1,8 @@
 import { Command, RunFunction } from '../classes/Command';
 
 const run: RunFunction = async ({ interaction, permLevel, permName }) => {
-  interaction.reply({
+  interaction.editReply({
     content: `Your permission level is: ${permLevel} - ${permName}`,
-    ephemeral: true,
   });
 };
 

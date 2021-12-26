@@ -9,27 +9,21 @@ export const config: Config = {
   discordToken: process.env.DISCORD_TOKEN ?? 'NOT_PROVIDED',
   // PERMISSION LEVEL DEFINITIONS.
   permLevels: [
-    // This is the lowest permisison level, this is for non-roled users.
     {
       level: 0,
       name: 'User',
-      // Don't bother checking, just return true which allows them to execute any command their
-      // level allows them to.
       check: () => true,
+      getPermission: ({ guild }) => {
+        return { id: guild.roles.everyone.id, permission: true, type: 'ROLE' };
+      }
     },
-    // This is your permission level, the staff levels should always be above the rest of the roles.
     {
       level: 2,
-      // This is the name of the role.
       name: 'Moderator',
-      // The following lines check the guild the message came from for the roles.
-      // Then it checks if the member that authored the message has the role.
-      // If they do return true, which will allow them to execute the command in question.
-      // If they don't then return false, which will prevent them from executing the command.
       check: ({ interaction, settings }: permCheckArgs): boolean => {
         try {
           const modRole = interaction.guild?.roles.cache.find(
-            (r) => r.name.toLowerCase() === settings.modRole.toLowerCase()
+            (r) => r.id === settings.modRole
           );
           if (
             modRole &&
@@ -43,6 +37,9 @@ export const config: Config = {
           return false;
         }
       },
+      getPermission: ({ settings }) => {
+        return { id: settings.modRole, permission: true, type: 'ROLE' };
+      }
     },
     {
       level: 3,
@@ -50,10 +47,9 @@ export const config: Config = {
       check: ({ interaction, settings }: permCheckArgs): boolean => {
         try {
           const adminRole = interaction.guild?.roles.cache.find(
-            (r) => r.name.toLowerCase() === settings.adminRole.toLowerCase()
+            (r) => r.id === settings.adminRole
           );
           if (!adminRole) return false;
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           return (
             interaction.member?.roles as GuildMemberRoleManager
           ).cache.has(adminRole.id);
@@ -61,22 +57,26 @@ export const config: Config = {
           return false;
         }
       },
+      getPermission: ({ settings }) => {
+        return { id: settings.adminRole, permission: true, type: 'ROLE' };
+      }
     },
-    // This is the server owner.
     {
       level: 4,
       name: 'Server Owner',
-      // Simple check, if the guild owner id matches the message author's ID, then it will return true.
-      // Otherwise it will return false.
       check: ({ interaction }) =>
         interaction.guild?.ownerId === interaction.user.id,
+      getPermission: ({ guild }) => {
+        return { id: guild.ownerId, permission: true, type: 'USER' };
+      }
     },
     {
       level: 10,
       name: 'Bot Creator',
-      // Another simple check, compares the message author id to the one stored in the config file.
-      // Do not change !
       check: ({ interaction }) => '244024524289343489' === interaction.user.id,
-    },
-  ],
+      getPermission: () => {
+        return { id: '244024524289343489', permission: true, type: 'USER' };
+      }
+    }
+  ]
 };

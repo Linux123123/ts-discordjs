@@ -1,23 +1,21 @@
 import { Bot } from '../classes/Bot';
 import { Command } from '../classes/Command';
 import { Event } from '../types/Event';
-import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v9';
 import {
-  ButtonInteraction,
   CommandInteraction,
   Guild,
   Message,
   MessageActionRow,
   MessageButton,
-  MessageEmbed,
+  MessageComponentInteraction,
+  MessageEmbed
 } from 'discord.js';
 import { GuildSettings } from '../types/GuildSettings';
 
 export const defaultSettings: GuildSettings = {
-  adminRole: 'Administrator',
-  modRole: 'Moderator',
-  embedColor: 'BLUE',
+  adminRole: 'NaN',
+  modRole: 'NaN',
+  embedColor: 'BLUE'
 };
 
 export class Functions {
@@ -30,6 +28,8 @@ export class Functions {
       const { cmd }: { cmd: Command } = await import(
         `../commands/${commandName}`
       );
+      if (cmd.permName !== 'User')
+        cmd.permLevel = this.bot.levelCache[cmd.permName];
       this.bot.commands.set(cmd.name, cmd);
     } catch (e) {
       this.bot.logger.error(`Unable to load command ${commandName}`);
@@ -49,23 +49,50 @@ export class Functions {
   }
   /* Registering slash commands */
   public async registerSlashCommands(
-    commands: Command[],
-    guildId: string[]
+    cmds: Command[],
+    guilds: Guild[]
   ): Promise<void> {
     try {
-      const slashCommands = commands.map((data) => data.toJSON());
-      const rest = new REST({ version: '9' }).setToken(
-        this.bot.config.discordToken
-      );
-      Promise.all(
-        guildId.map(async (id) => {
-          await rest.put(
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            Routes.applicationGuildCommands(this.client.user!.id, id),
-            {
-              body: slashCommands,
-            }
-          );
+      const slashCommands = cmds.map((cmd) => cmd.toJSON());
+      await Promise.all(
+        guilds.map(async (guild) => {
+          const commands = await guild.commands.set(slashCommands);
+          const roles = await guild.roles.fetch();
+          const settings = this.getSettings(guild);
+          const adminRole = roles.find((r) => r.id === settings.adminRole);
+          const modRole = roles.find((r) => r.id === settings.modRole);
+          if (!adminRole || !modRole) {
+            const cmd = commands.find((c) => c.name === 'set');
+            if (!cmd)
+              return this.bot.logger.error(
+                "Critical Error: 'set' command not found"
+              );
+            const permLevels = this.bot.config.permLevels.filter(
+              (p) => p.name === 'Bot Creator' || p.name === 'Server Owner'
+            );
+            const permissions = permLevels.map((p) =>
+              p.getPermission({ settings, guild })
+            );
+            await cmd.permissions.add({
+              permissions
+            });
+            return this.bot.logger.warn(
+              'Unable to find roles. Set roles in server with /set as the server owner!'
+            );
+          } else {
+            commands.forEach((cmd) => {
+              const command = cmds.find((c) => c.name === cmd.name);
+              if (command && !command.defaultPermission) {
+                const permLevels = this.bot.config.permLevels.filter(
+                  (p) => p.level >= command.permLevel
+                );
+                const permissions = permLevels.map((p) =>
+                  p.getPermission({ settings, guild })
+                );
+                cmd.permissions.add({ permissions: permissions });
+              }
+            });
+          }
         })
       );
 
@@ -116,15 +143,13 @@ export class Functions {
         fields: [
           {
             name: '\u200b',
-            value: `**Your permission level is ${level} (${levelName})**`,
+            value: `**Your permission level is ${level} (${levelName})**`
           },
           {
             name: '\u200b',
-            value: `**This command requires level ${
-              this.bot.levelCache[cmd.permLevel]
-            } (${cmd.permLevel})**`,
-          },
-        ],
+            value: `**This command requires level ${cmd.permLevel} (${cmd.permName})**`
+          }
+        ]
       },
       { embedColor: 'RED' }
     );
@@ -140,13 +165,13 @@ export class Functions {
     const backButton = new MessageButton({
       customId: 'back',
       style: 'SECONDARY',
-      label: 'Back',
+      label: 'Back'
     });
 
     const nextButton = new MessageButton({
       customId: 'next',
       style: 'SECONDARY',
-      label: 'Next',
+      label: 'Next'
     });
 
     const row = new MessageActionRow().addComponents([backButton, nextButton]);
@@ -154,15 +179,15 @@ export class Functions {
     const curPage = (await interaction.reply({
       embeds: [embeds[page].setFooter(`Page ${page + 1} / ${embeds.length}`)],
       components: [row],
-      fetchReply: true,
+      fetchReply: true
     })) as Message;
 
-    const filter = (i: ButtonInteraction) =>
+    const filter = (i: MessageComponentInteraction) =>
       i.customId === 'back' || i.customId === 'next';
 
-    const collector = await curPage.createMessageComponentCollector({
+    const collector = curPage.createMessageComponentCollector({
       filter,
-      time: 12000,
+      time: 3600000
     });
 
     collector.on('collect', async (i) => {
@@ -179,7 +204,7 @@ export class Functions {
       await i.deferUpdate();
       await i.editReply({
         embeds: [embeds[page].setFooter(`Page ${page + 1} / ${embeds.length}`)],
-        components: [row],
+        components: [row]
       });
       collector.resetTimer();
     });
@@ -192,9 +217,9 @@ export class Functions {
         );
         curPage.edit({
           embeds: [
-            embeds[page].setFooter(`Page ${page + 1} / ${embeds.length}`),
+            embeds[page].setFooter(`Page ${page + 1} / ${embeds.length}`)
           ],
-          components: [disabledRow],
+          components: [disabledRow]
         });
       }
     });

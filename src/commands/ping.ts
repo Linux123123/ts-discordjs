@@ -13,7 +13,7 @@ const run: RunFunction = async ({ bot, interaction, settings }) => {
     },
     { settings }
   );
-  interaction.reply({ embeds: [embed], ephemeral: true });
+  interaction.editReply({ embeds: [embed] });
 };
 
 export const cmd = new Command()

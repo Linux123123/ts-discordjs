@@ -4,7 +4,7 @@ import {
   ColorResolvable,
   Intents,
   MessageEmbed,
-  MessageEmbedOptions,
+  MessageEmbedOptions
 } from 'discord.js';
 import { readdir } from 'fs';
 import { promisify } from 'util';
@@ -28,6 +28,10 @@ export class Bot {
   public logger = new Logger();
   public start = async (): Promise<void> => {
     handleExceptions(this);
+    for (let i = 0; i < this.config.permLevels.length; i++) {
+      const thisLevel: permObject = this.config.permLevels[i];
+      this.levelCache[thisLevel.name] = thisLevel.level;
+    }
     const cmdFiles = await readAsyncDir(`${__dirname}/../commands`);
     const eventFiles = await readAsyncDir(`${__dirname}/../events`);
     cmdFiles.forEach((cmd) => {
@@ -38,13 +42,12 @@ export class Bot {
     );
     await this.discordClient.login(this.config.discordToken);
     await this.discordClient.guilds.fetch();
-    const guildIds = this.discordClient.guilds.cache.map((guild) => guild.id);
-    await this.functions.registerSlashCommands(this.commands.array(), guildIds);
-    for (let i = 0; i < this.config.permLevels.length; i++) {
-      const thisLevel: permObject = this.config.permLevels[i];
-      this.levelCache[thisLevel.name] = thisLevel.level;
-    }
+    await this.functions.registerSlashCommands(
+      this.commands.array(),
+      this.discordClient.guilds.cache.map((guild) => guild)
+    );
   };
+
   public embed(
     data: MessageEmbedOptions,
     options?: { settings?: GuildSettings; embedColor?: ColorResolvable }
@@ -52,7 +55,7 @@ export class Bot {
     return new MessageEmbed({
       ...data,
       color: options?.settings?.embedColor ?? options?.embedColor ?? '#0000FF',
-      timestamp: new Date(),
+      timestamp: new Date()
     });
   }
 }

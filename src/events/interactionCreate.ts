@@ -15,12 +15,16 @@ export const run: RunFunction = async (bot, interaction: Interaction) => {
     }
 
     const permLevel = bot.functions.permlevel(interaction, settings);
+
     const permName =
       bot.config.permLevels.find((l) => l.level === permLevel)?.name ??
       'Unknown';
 
     // Check permissions
-    if (permLevel < bot.levelCache[cmd.permLevel]) {
+    // Not needed as using slash commands gives a way to validate permissions,
+    // but may be good to protect against some kind of error
+    // where permissions are not checked
+    if (permLevel < cmd.permLevel) {
       return await bot.functions.permissionError(
         interaction,
         permLevel,
@@ -28,6 +32,8 @@ export const run: RunFunction = async (bot, interaction: Interaction) => {
         cmd
       );
     }
+
+    cmd.defer && (await interaction.deferReply({ ephemeral: cmd.ephemeral }));
 
     bot.logger.cmd(
       `${permName} ${interaction.user.username} (${interaction.user.id}) ran command ${cmd.name}`

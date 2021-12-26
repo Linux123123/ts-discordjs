@@ -22,13 +22,29 @@ export class Command extends SlashCommandBuilder {
   constructor() {
     super();
   }
-  public permLevel = 'User';
+  public defaultPermission = true;
+  public permName = 'User';
+  public permLevel = 0;
   public category = 'Miscelaneous';
+  public ephemeral = true;
+  public defer = true;
   public run!: RunFunction;
   public setup?: SetupFunction;
 
-  public setPermLevel = (permLevel: string): this => {
-    this.permLevel = permLevel;
+  public setNotdefered = (): this => {
+    this.defer = false;
+    this.ephemeral = false;
+    return this;
+  };
+
+  public setNotEphemeral = (): this => {
+    this.ephemeral = false;
+    return this;
+  };
+
+  public setPermName = (permName: string): this => {
+    this.permName = permName;
+    this.defaultPermission = false;
     return this;
   };
 

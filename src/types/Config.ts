@@ -1,4 +1,8 @@
-import { CommandInteraction } from 'discord.js';
+import {
+  ApplicationCommandPermissionData,
+  CommandInteraction,
+  Guild
+} from 'discord.js';
 import { GuildSettings } from './GuildSettings';
 
 export type permCheckArgs = {
@@ -13,10 +17,18 @@ export interface permCheck {
   }): boolean;
 }
 
+export interface getPermission {
+  (options: {
+    settings: GuildSettings;
+    guild: Guild;
+  }): ApplicationCommandPermissionData;
+}
+
 export interface permObject {
   level: number;
   name: string;
   check: permCheck;
+  getPermission: getPermission;
 }
 
 export interface Config {

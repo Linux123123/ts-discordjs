@@ -1,5 +1,6 @@
 import { ColorResolvable, HexColorString } from 'discord.js';
 import { Command, RunFunction } from '../classes/Command';
+import { permObject } from '../types/Config';
 import { GuildSettings } from '../types/GuildSettings';
 
 const run: RunFunction = async ({ interaction, settings, bot }) => {
@@ -21,21 +22,21 @@ const run: RunFunction = async ({ interaction, settings, bot }) => {
         fields: [
           {
             name: 'Admin Role',
-            value: aRole?.toString() ?? 'Role Not Found',
+            value: aRole?.toString() ?? 'Role Not Found'
           },
           {
             name: 'Moderator Role',
-            value: mRole?.toString() ?? 'Role Not Found',
+            value: mRole?.toString() ?? 'Role Not Found'
           },
           {
             name: '⟵ Embed Color',
-            value: settings.embedColor.toString().toLowerCase(),
-          },
-        ],
+            value: settings.embedColor.toString().toLowerCase()
+          }
+        ]
       },
       { settings }
     );
-    return interaction.reply({ embeds: [embed] });
+    return interaction.editReply({ embeds: [embed] });
   }
 
   let text = '';
@@ -50,6 +51,16 @@ const run: RunFunction = async ({ interaction, settings, bot }) => {
     text += `Set Moderator Role: ${modRole.toString()}\n`;
   }
 
+  if (adminRole || modRole) {
+    for (let i = 0; i < bot.config.permLevels.length; i++) {
+      const thisLevel: permObject = bot.config.permLevels[i];
+      bot.levelCache[thisLevel.name] = thisLevel.level;
+    }
+    bot.functions.registerSlashCommands(bot.commands.array(), [
+      interaction.guild
+    ]);
+  }
+
   if (embedColor) {
     bot.settings.set(interaction.guild.id, embedColor, 'embedColor');
     settings.embedColor = embedColor as ColorResolvable;
@@ -59,12 +70,12 @@ const run: RunFunction = async ({ interaction, settings, bot }) => {
   const embed = bot.embed(
     {
       title: 'Successfully:',
-      description: text,
+      description: text
     },
     { settings }
   );
 
-  interaction.reply({ embeds: [embed] });
+  interaction.editReply({ embeds: [embed] });
 };
 
 type choices = [
@@ -100,13 +111,14 @@ const options: choices = [
   ['greyple', 'GREYPLE'],
   ['dark_but_not_black', 'DARK_BUT_NOT_BLACK'],
   ['not_quite_black', 'NOT_QUITE_BLACK'],
-  ['random', 'RANDOM'],
+  ['random', 'RANDOM']
 ];
 
 export const cmd = new Command()
   .setName('set')
   .setDescription('Server settings')
-  .setPermLevel('Administrator')
+  .setCategory('Admin')
+  .setPermName('Administrator')
   .setRun(run)
   .addRoleOption((input) =>
     input.setName('adminrole').setDescription('Set the Admin role')

@@ -3,7 +3,7 @@ import { Command, RunFunction } from '../classes/Command';
 
 const run: RunFunction = async ({ interaction, bot, permLevel, settings }) => {
   const availCommands = bot.commands.filter(
-    (cmd) => bot.levelCache[cmd.permLevel] <= permLevel
+    (cmd) => cmd.permLevel <= permLevel
   );
 
   const sorted = availCommands
@@ -27,13 +27,13 @@ const run: RunFunction = async ({ interaction, bot, permLevel, settings }) => {
       embeds[embedNum] = bot.embed(
         {
           title: `${cat} Commands`,
-          description: '',
+          description: ''
         },
         { settings }
       );
       currentCategory = cat;
     }
-    embeds[embedNum].description += `/${c.name} - *${c.description}*\n`;
+    embeds[embedNum].description += `**/${c.name}** - *${c.description}*\n`;
   });
 
   await bot.functions.paginate(interaction, embeds);
@@ -42,4 +42,5 @@ const run: RunFunction = async ({ interaction, bot, permLevel, settings }) => {
 export const cmd = new Command()
   .setName('help')
   .setDescription('Gives all the commands available and their descriptions')
+  .setNotdefered()
   .setRun(run);
